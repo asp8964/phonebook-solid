@@ -1,0 +1,73 @@
+name: Deployment pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 10
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install
+      - name: Check style
+        run: pnpm lint
+      - name: Build
+        run: pnpm build
+      # - name: Test
+      #   run: npm run test
+      # - name: Deploy
+      #   if: ${{github.event_name == 'push' && github.ref == 'refs/heads/main'}}
+      #   env:
+      #     deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      #   run: |
+      #     curl "$deploy_url"
+      # - name: Discord Notify
+      #   uses: sarisia/actions-status-discord@v1
+      #   if: success()
+      #   with:
+      #     webhook: ${{ secrets.DISCORD_WEBHOOK }}
+      #     nodetail: true
+      #     content: A new version of `phone book` deployed
+      #     title: ${{github.event.pull_request.title}} pull request
+      #     description: deploy success
+      # - name: Discord Notify
+      #   uses: sarisia/actions-status-discord@v1
+      #   if: ${{!success()}}
+      #   with:
+      #     webhook: ${{ secrets.DISCORD_WEBHOOK }}
+      #     nodetail: true
+      #     content: Check fail
+      #     title: commit
+      #     description: ${{github.event.pull_request.title}} works fail
+      #     color: 0xff91a4
+
+  tag_release:
+    needs: [deployment]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: '0'
+    - name: Bump version and push tag
+      if: ${{github.event_name == 'push' && !contains(join(github.event.commits.*.message, ','), '#skip')}}
+      uses: anothrNick/github-tag-action@1.64.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        DEFAULT_BUMP: "mirror"
