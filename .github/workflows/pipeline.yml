@@ -32,31 +32,31 @@ jobs:
         run: pnpm build
       # - name: Test
       #   run: npm run test
-      # - name: Deploy
-      #   if: ${{github.event_name == 'push' && github.ref == 'refs/heads/main'}}
-      #   env:
-      #     deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-      #   run: |
-      #     curl "$deploy_url"
-      # - name: Discord Notify
-      #   uses: sarisia/actions-status-discord@v1
-      #   if: success()
-      #   with:
-      #     webhook: ${{ secrets.DISCORD_WEBHOOK }}
-      #     nodetail: true
-      #     content: A new version of `phone book` deployed
-      #     title: ${{github.event.pull_request.title}} pull request
-      #     description: deploy success
-      # - name: Discord Notify
-      #   uses: sarisia/actions-status-discord@v1
-      #   if: ${{!success()}}
-      #   with:
-      #     webhook: ${{ secrets.DISCORD_WEBHOOK }}
-      #     nodetail: true
-      #     content: Check fail
-      #     title: commit
-      #     description: ${{github.event.pull_request.title}} works fail
-      #     color: 0xff91a4
+      - name: Deploy
+        if: ${{github.event_name == 'push' && github.ref == 'refs/heads/main'}}
+        env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          curl "$deploy_url"
+      - name: Discord Notify
+        uses: sarisia/actions-status-discord@v1
+        if: ${{success() && github.event_name == 'push' && github.ref == 'refs/heads/main'}}
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          nodetail: true
+          content: A new version of `phonebook-solid` deployed
+          title: ${{github.event.pull_request.title}} pull request
+          description: deploy success
+      - name: Discord Notify
+        uses: sarisia/actions-status-discord@v1
+        if: ${{!success() && github.event_name == 'push' && github.ref == 'refs/heads/main'}}
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          nodetail: true
+          content: The new version of `phonebook-solid` deployed fail
+          title: ${{github.event.pull_request.title}} pull request
+          description: deploy fail
+          color: 0xff91a4
 
   tag_release:
     needs: [deployment]
